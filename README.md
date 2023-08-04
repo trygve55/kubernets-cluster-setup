@@ -67,14 +67,16 @@ kubectl create namespace fluentd
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm install elasticsearch bitnami/elasticsearch -n fluentd
 helm upgrade --install kibana -n fluentd oci://registry-1.docker.io/bitnamicharts/kibana \
-  --set elasticsearch.enabled=false \
-  --set elasticsearch.hosts[0]=elasticsearch.fluentd.svc.cluster.local \
+  --set elasticsearch.hosts[0]=elasticsearch.fluentd \
   --set elasticsearch.port=9200 \
   --set ingress.enabled=true \
   --set ingress.ingressClassName=public
 
-helm upgrade --install fluentd -n fluentd oci://registry-1.docker.io/bitnamicharts/fluentd --set aggregator.ingress.enabled=true --set aggregator.ingress.ingressClassName=public
-```
+kubectl apply -f fluentd-elasticsearch-output.yaml -n fluentd
+
+helm upgrade --install fluentd -n fluentd oci://registry-1.docker.io/bitnamicharts/fluentd \
+  --set aggregator.configMap=elasticsearch-output
+
 
 TODO
 https://docs.bitnami.com/tutorials/integrate-logging-kubernetes-kibana-elasticsearch-fluentd/
