@@ -61,22 +61,32 @@ kubectl create namespace ingress
 helm upgrade --install ingress -n ingress oci://ghcr.io/nginxinc/charts/nginx-ingress --set=controller.ingressClass=public
 ```
 
-##### fluentd
+##### Logging
 ```shell
 kubectl create namespace fluentd
+```
+###### Elasticsearch
+```shell
+helm repo add elastic https://helm.elastic.co
+helm install elasticsearch bitnami/elasticsearch -n logging \
+  --set master.replicaCount=1 \
+  --set data.replicaCount=1 \
+  --set coordinating.replicaCount=1 \
+  --set ingest.replicaCount=1
+```
+###### fluent-bit
+```shell
+helm repo add fluent https://fluent.github.io/helm-charts
+helm upgrade --install fluent-bit fluent/fluent-bit \
+  -n logging \
+  --values fluent-bit-values.yaml
+```
+###### Kibana
+```shell
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install elasticsearch bitnami/elasticsearch -n fluentd
-helm upgrade --install kibana -n fluentd oci://registry-1.docker.io/bitnamicharts/kibana \
-  --set elasticsearch.hosts[0]=elasticsearch.fluentd \
+helm upgrade --install kibana bitnami/kibana -n logging \
+  --set elasticsearch.hosts[0]=elasticsearch-master-hl \
   --set elasticsearch.port=9200 \
   --set ingress.enabled=true \
   --set ingress.ingressClassName=public
-
-kubectl apply -f fluentd-elasticsearch-output.yaml -n fluentd
-
-helm upgrade --install fluentd -n fluentd oci://registry-1.docker.io/bitnamicharts/fluentd \
-  --set aggregator.configMap=elasticsearch-output
-
-
-TODO
-https://docs.bitnami.com/tutorials/integrate-logging-kubernetes-kibana-elasticsearch-fluentd/
+```
