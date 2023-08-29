@@ -63,7 +63,7 @@ helm upgrade --install ingress -n ingress oci://ghcr.io/nginxinc/charts/nginx-in
 
 ##### Logging
 ```shell
-kubectl create namespace fluentd
+kubectl create namespace logging
 ```
 ###### Elasticsearch
 ```shell
