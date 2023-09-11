@@ -69,10 +69,13 @@ kubectl create namespace logging
 ```shell
 helm repo add elastic https://helm.elastic.co
 helm install elasticsearch bitnami/elasticsearch -n logging \
+  --set master.masterOnly=false \
+  --set master.heapSize=128m \
   --set master.replicaCount=1 \
-  --set data.replicaCount=1 \
-  --set coordinating.replicaCount=1 \
-  --set ingest.replicaCount=1
+  --set data.replicaCount=0 \
+  --set coordinating.replicaCount=0 \
+  --set ingest.replicaCount=0 \
+  --set metrics.enabled=true
 ```
 ###### fluent-bit
 ```shell
@@ -88,5 +91,20 @@ helm upgrade --install kibana bitnami/kibana -n logging \
   --set elasticsearch.hosts[0]=elasticsearch-master-hl \
   --set elasticsearch.port=9200 \
   --set ingress.enabled=true \
+  --set ingress.ingressClassName=public
+```
+##### Prometheus
+```shell
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm upgrade --install kibana bitnami/kibana -n logging \
+  --set server.ingress.enabled=true \
+  --set server.ingress.hosts[0]=prometheus.local \
+  --set server.ingress.ingressClassName=public
+```
+##### Grafana
+```shell
+helm install grafana bitnami/grafana -n prometheus \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0]=prometheus.local \
   --set ingress.ingressClassName=public
 ```
