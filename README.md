@@ -108,3 +108,24 @@ helm install grafana bitnami/grafana -n prometheus \
   --set ingress.hosts[0]=prometheus.local \
   --set ingress.ingressClassName=public
 ```
+###### Opensearch
+```shell
+helm repo add opensearch https://opensearch-project.github.io/helm-charts/
+helm install opensearch opensearch/opensearch -n logging \
+  --set singleNode=true \
+  --values opensearch-values.yaml
+helm install opensearch-dashboards opensearch/opensearch-dashboards -n logging \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0].host=opensearch.local \
+  --set ingress.hosts[0].paths[0].path=/ \
+  --set ingress.hosts[0].paths[0].backend.service.name=opensearch-cluster-master \
+  --set ingress.ingressClassName=public \
+  --values opensearch-dashboards-values.yaml
+```
+###### fluent-bit opensearch
+```shell
+helm repo add fluent https://fluent.github.io/helm-charts
+helm upgrade --install fluent-bit fluent/fluent-bit \
+  -n logging \
+  --values fluent-bit-values-opensearch.yaml
+```
