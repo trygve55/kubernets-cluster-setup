@@ -103,11 +103,23 @@ helm upgrade --install kibana bitnami/kibana -n logging \
 ```
 ##### Grafana
 ```shell
+kubectl create configmap memory-dashboard --from-file=memory-dashboard.json -n prometheus
 helm install grafana bitnami/grafana -n prometheus \
   --set ingress.enabled=true \
   --set ingress.hosts[0]=prometheus.local \
-  --set ingress.ingressClassName=public
+  --set ingress.ingressClassName=public \
+  --set admin.user=admin \
+  --set admin.password=admin \
+  --set dashboardsProvider.enabled=true \
+  --set dashboardsConfigMaps[0].configMapName=memory-dashboard \
+  --set dashboardsConfigMaps[0].fileName=memory-dashboard.json \
+  --values grafana-values.yaml
 ```
+Username: admin
+
+Password: admin
+
+Url: 
 ###### Opensearch
 ```shell
 helm repo add opensearch https://opensearch-project.github.io/helm-charts/
@@ -122,6 +134,11 @@ helm install opensearch-dashboards opensearch/opensearch-dashboards -n logging \
   --set ingress.ingressClassName=public \
   --values opensearch-dashboards-values.yaml
 ```
+Username: admin
+
+Password: admin
+
+Url: http://opensearch.local/app/discover
 ###### fluent-bit opensearch
 ```shell
 helm repo add fluent https://fluent.github.io/helm-charts
