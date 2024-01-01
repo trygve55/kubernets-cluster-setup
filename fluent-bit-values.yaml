@@ -3,7 +3,7 @@ config:
     [OUTPUT]
         Name es
         Match kube.*
-        Host elasticsearch-master-hl
+        Host opensearch-cluster-master-headless
         Logstash_Format On
         Retry_Limit False
         Suppress_Type_Name On
@@ -11,7 +11,7 @@ config:
     [OUTPUT]
         Name es
         Match host.*
-        Host elasticsearch-master
+        Host opensearch-cluster-master-headless
         Logstash_Format On
         Logstash_Prefix node
         Retry_Limit False

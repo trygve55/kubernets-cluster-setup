@@ -1,0 +1,5 @@
+config:
+  opensearch_dashboards.yml: |
+    opensearch.username: "admin"
+    opensearch.password: "admin"
+    opensearch.ssl.verificationMode: none

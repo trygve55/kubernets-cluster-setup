@@ -1,0 +1,111 @@
+singleNode: true
+opensearchJavaOpts: "-Xmx128M -Xms128M"
+config:
+  # Values must be YAML literal style scalar / YAML multiline string.
+  # <filename>: |
+  #   <formatted-value(s)>
+  # log4j2.properties: |
+  #   status = error
+  #
+  #   appender.console.type = Console
+  #   appender.console.name = console
+  #   appender.console.layout.type = PatternLayout
+  #   appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] [%node_name]%marker %m%n
+  #
+  #   rootLogger.level = info
+  #   rootLogger.appenderRef.console.ref = console
+  jvm.options: |
+    -Xms140m
+    -Xmx140m
+
+    ## GC configuration
+    -XX:+UseParallelGC
+
+    ## JVM temporary directory
+    -Djava.io.tmpdir=${OPENSEARCH_TMPDIR}
+
+    ## heap dumps
+
+    # generate a heap dump when an allocation from the Java heap fails
+    # heap dumps are created in the working directory of the JVM
+    -XX:+HeapDumpOnOutOfMemoryError
+
+    # specify an alternative path for heap dumps; ensure the directory exists and
+    # has sufficient space
+    -XX:HeapDumpPath=data
+
+    # specify an alternative path for JVM fatal error logs
+    -XX:ErrorFile=logs/hs_err_pid%p.log
+
+    ## JDK 8 GC logging
+    8:-XX:+PrintGCDetails
+    8:-XX:+PrintGCDateStamps
+    8:-XX:+PrintTenuringDistribution
+    8:-XX:+PrintGCApplicationStoppedTime
+    8:-Xloggc:logs/gc.log
+    8:-XX:+UseGCLogFileRotation
+    8:-XX:NumberOfGCLogFiles=32
+    8:-XX:GCLogFileSize=64m
+
+    # JDK 9+ GC logging
+    9-:-Xlog:gc*,gc+age=trace,safepoint:file=logs/gc.log:utctime,pid,tags:filecount=32,filesize=64m
+
+    # Explicitly allow security manager (https://bugs.openjdk.java.net/browse/JDK-8270380)
+    18-:-Djava.security.manager=allow
+
+    ## OpenDistro Performance Analyzer
+    -Dclk.tck=100
+    -Djdk.attach.allowAttachSelf=true
+    -Djava.security.policy=/usr/share/opensearch/config/opensearch-performance-analyzer/opensearch_security.policy
+    --add-opens=jdk.attach/sun.tools.attach=ALL-UNNAMED
+
+  opensearch.yml: |
+    cluster.name: opensearch-cluster
+
+    # Bind to all interfaces because we don't know what IP address Docker will assign to us.
+    network.host: 0.0.0.0
+
+    # Setting network.host to a non-loopback address enables the annoying bootstrap checks. "Single-node" mode disables them again.
+    # Implicitly done if ".singleNode" is set to "true".
+    # discovery.type: single-node
+
+    # Start OpenSearch Security Demo Configuration
+    # WARNING: revise all the lines below before you go into production
+    plugins:
+      security:
+        ssl:
+          transport:
+            pemcert_filepath: esnode.pem
+            pemkey_filepath: esnode-key.pem
+            pemtrustedcas_filepath: root-ca.pem
+            enforce_hostname_verification: false
+          http:
+            enabled: true
+            pemcert_filepath: esnode.pem
+            pemkey_filepath: esnode-key.pem
+            pemtrustedcas_filepath: root-ca.pem
+        allow_unsafe_democertificates: true
+        allow_default_init_securityindex: true
+        authcz:
+          admin_dn:
+            - CN=kirk,OU=client,O=client,L=test,C=de
+        audit.type: internal_opensearch
+        enable_snapshot_restore_privilege: true
+        check_snapshot_restore_write_privileges: true
+        restapi:
+          roles_enabled: ["all_access", "security_rest_api_access"]
+        system_indices:
+          enabled: true
+          indices:
+            [
+              ".opendistro-alerting-config",
+              ".opendistro-alerting-alert*",
+              ".opendistro-anomaly-results*",
+              ".opendistro-anomaly-detector*",
+              ".opendistro-anomaly-checkpoints",
+              ".opendistro-anomaly-detection-state",
+              ".opendistro-reports-*",
+              ".opendistro-notifications-*",
+              ".opendistro-notebooks",
+              ".opendistro-asynchronous-search-response*",
+            ]
