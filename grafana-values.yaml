@@ -1,0 +1,8 @@
+datasources:
+  secretDefinition:
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.prometheus.svc
+        editable: false
