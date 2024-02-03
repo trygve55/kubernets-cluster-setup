@@ -1,4 +1,5 @@
-# server-setup
+# Single host Kubernetes cluster
+Using Debian and k3s.
 ### Install OS
 Install Debain with SSH server setup and no desktop environment.
 ### Key based authentication setup
