@@ -1,7 +1,7 @@
 # Single host Kubernetes cluster
-Using Debian and k3s.
-### Install OS
-Install Debain with SSH server setup and no desktop environment.
+Sets up a single host Kubernets cluster using Debian and k3s. With Ingress support, metrics(Prometehus), load balancer(MetalLB) and logging(Elasticsearch, fluent-bit and Kibana or Opensearch with fluent-bit).
+## Install Host OS
+Install Debain with SSH server setup and no desktop environment on a VM or bare-metal.
 ### Key based authentication setup
 TODO
 ssh-keygen -t rsa
@@ -18,14 +18,17 @@ Add user to sudoers
 /usr/sbin/usermod -aG sudo <your username>
 ```
 
-#### Unnatended update
+### Unnatended update
+```shell
 sudo apt install unattended-upgrades apt-listchanges
-##### Setup email notification
+```
+### Setup email notification
 TODO
 https://medium.com/@carlesanagustin/sending-emails-from-ssmtp-with-a-gmail-account-cbefdcac91f8
 You should at least uncomment the following line:
 Unattended-Upgrade::Mail "root";
 
+### Setup K8s and related utilites
 #### kubectl
 ```shell
 curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
@@ -55,46 +58,24 @@ sudo apt-get update
 sudo apt install helm=3.12.*
 ```
 
-#### Kubernetes plugins
-##### Ingress
+## Kubernetes plugins
+### Ingress
+Ingress is used to expose HTTP and HTTPS services within the cluster.
 ```shell
 kubectl create namespace ingress
 helm upgrade --install ingress -n ingress oci://ghcr.io/nginxinc/charts/nginx-ingress --set=controller.ingressClass=public
 ```
 
-##### Logging
+### MetalLB
+MetalLB allows us to give each externally avalible service a seperate IP.
 ```shell
-kubectl create namespace logging
+helm repo add metallb https://metallb.github.io/metallb
+helm install metallb metallb/metallb
 ```
-###### Elasticsearch
-```shell
-helm repo add elastic https://helm.elastic.co
-helm install elasticsearch bitnami/elasticsearch -n logging \
-  --set master.masterOnly=false \
-  --set master.heapSize=128m \
-  --set master.replicaCount=1 \
-  --set data.replicaCount=0 \
-  --set coordinating.replicaCount=0 \
-  --set ingest.replicaCount=0 \
-  --set metrics.enabled=true
-```
-###### fluent-bit
-```shell
-helm repo add fluent https://fluent.github.io/helm-charts
-helm upgrade --install fluent-bit fluent/fluent-bit \
-  -n logging \
-  --values fluent-bit-values.yaml
-```
-###### Kibana
-```shell
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm upgrade --install kibana bitnami/kibana -n logging \
-  --set elasticsearch.hosts[0]=elasticsearch-master-hl \
-  --set elasticsearch.port=9200 \
-  --set ingress.enabled=true \
-  --set ingress.ingressClassName=public
-```
-##### Prometheus
+
+### Metrics
+#### Prometheus
+For metrics we will use Prometheus.
 ```shell
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm upgrade --install kibana bitnami/kibana -n logging \
@@ -102,7 +83,8 @@ helm upgrade --install kibana bitnami/kibana -n logging \
   --set server.ingress.hosts[0]=prometheus.local \
   --set server.ingress.ingressClassName=public
 ```
-##### Grafana
+
+#### Grafana
 ```shell
 kubectl create configmap memory-dashboard --from-file=memory-dashboard.json -n prometheus
 helm install grafana bitnami/grafana -n prometheus \
@@ -121,7 +103,43 @@ Username: admin
 Password: admin
 
 Url: 
-###### Opensearch
+
+### Logging
+For managing logs you can either use EFK(Elasticsearch, fluentbit and Kibana) or Opensearch with fluentbit. Only use one of them!
+```shell
+kubectl create namespace logging
+```
+#### EFK
+##### Elasticsearch
+```shell
+helm repo add elastic https://helm.elastic.co
+helm install elasticsearch bitnami/elasticsearch -n logging \
+  --set master.masterOnly=false \
+  --set master.heapSize=128m \
+  --set master.replicaCount=1 \
+  --set data.replicaCount=0 \
+  --set coordinating.replicaCount=0 \
+  --set ingest.replicaCount=0 \
+  --set metrics.enabled=true
+```
+##### fluent-bit
+```shell
+helm repo add fluent https://fluent.github.io/helm-charts
+helm upgrade --install fluent-bit fluent/fluent-bit \
+  -n logging \
+  --values fluent-bit-values.yaml
+```
+##### Kibana
+```shell
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm upgrade --install kibana bitnami/kibana -n logging \
+  --set elasticsearch.hosts[0]=elasticsearch-master-hl \
+  --set elasticsearch.port=9200 \
+  --set ingress.enabled=true \
+  --set ingress.ingressClassName=public
+```
+
+#### Opensearch
 ```shell
 helm repo add opensearch https://opensearch-project.github.io/helm-charts/
 helm install opensearch opensearch/opensearch -n logging \
@@ -136,11 +154,10 @@ helm install opensearch-dashboards opensearch/opensearch-dashboards -n logging \
   --values opensearch-dashboards-values.yaml
 ```
 Username: admin
-
 Password: admin
 
 Url: http://opensearch.local/app/discover
-###### fluent-bit opensearch
+##### fluent-bit opensearch
 ```shell
 helm repo add fluent https://fluent.github.io/helm-charts
 helm upgrade --install fluent-bit fluent/fluent-bit \
