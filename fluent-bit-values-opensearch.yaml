@@ -10,7 +10,7 @@ config:
         Suppress_Type_Name On
         Replace_Dots On
         HTTP_User admin
-        HTTP_Passwd admin
+        HTTP_Passwd OpensearchPassword123!
         tls On
         tls.verify Off
 
@@ -24,7 +24,7 @@ config:
         Suppress_Type_Name On
         Replace_Dots On
         HTTP_User admin
-        HTTP_Passwd admin
+        HTTP_Passwd OpensearchPassword123!
         tls On
         tls.verify Off
 

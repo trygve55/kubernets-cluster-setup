@@ -1,5 +1,8 @@
 singleNode: true
 opensearchJavaOpts: "-Xmx128M -Xms128M"
+extraEnvs:
+  - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+    value: OpensearchPassword123!
 config:
   # Values must be YAML literal style scalar / YAML multiline string.
   # <filename>: |
@@ -15,8 +18,8 @@ config:
   #   rootLogger.level = info
   #   rootLogger.appenderRef.console.ref = console
   jvm.options: |
-    -Xms140m
-    -Xmx140m
+    -Xms192m
+    -Xmx192m
 
     ## GC configuration
     -XX:+UseParallelGC
