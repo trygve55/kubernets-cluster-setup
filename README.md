@@ -3,13 +3,13 @@ Sets up a single host Kubernets cluster using Debian and k3s. With Ingress suppo
 ## Install Host OS
 Install Debain with SSH server setup and no desktop environment on a VM or bare-metal.
 
-Tested with Debian 12.5.0
+Tested with Debian 12.10.0
 ### Key based authentication setup
 TODO
 ssh-keygen -t rsa
 ### Tools
 ```shell
-apt install -y htop curl ca-certificates apt-transport-https gpg git
+sudo apt install -y htop git
 ```
 
 ### Clone Git repo
@@ -30,32 +30,53 @@ Unattended-Upgrade::Mail "root";
 ### Setup K8s and related utilites
 #### kubectl
 ```shell
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.27/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list 
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list
+
 sudo apt-get update
-sudo apt-get install -y kubectl=1.27*
+sudo apt-get install -y kubectl=1.32.*
 ```
 
 #### K3s
+K3s is a lightweight Kubernetes distribution. We will install it.
 ```shell
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=v1.27 INSTALL_K3S_EXEC="server --disable traefik" sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=v1.32 INSTALL_K3S_EXEC="server --disable traefik" sh -
 ```
 
 ##### Configure kubectl
+We use Kubectl, the Kubernetes command-line tool for communicating with a Kubernetes cluster's control plane.
 ```shell
 mkdir ~/.kube
 sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config && sudo chown $USER ~/.kube/config
 sudo chmod 600 ~/.kube/config && export KUBECONFIG=~/.kube/config
 ```
+###### Test kubectl
+Test that kubectl can connect to Kubernetes.
+```shell
+kubectl events
+```
+
+###### K9s (optional)
+K9s is a terminal based UI to interact with your Kubernetes clusters.
+```shell
+wget https://github.com/derailed/k9s/releases/download/v0.50.2/k9s_linux_amd64.deb
+sudo apt install ./k9s_linux_amd64.deb
+rm ./k9s_linux_amd64.deb
+
+k9s version # Test that the install was a success.
+```
 
 ##### Helm setup
+Helm is a tool for managing Kubernetes applications with charts.
 ```shell
 curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
 sudo apt-get update
-sudo apt install helm=3.12.*
+sudo apt install helm=3.17.*
 ```
 
 ## Kubernetes plugins
@@ -85,6 +106,8 @@ helm upgrade --install prometheus prometheus-community/prometheus -n prometheus 
   --set server.ingress.ingressClassName=public
 ```
 
+Url: http://prometheus.local/
+
 #### Grafana
 ```shell
 helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -104,7 +127,7 @@ Username: admin
 
 Password: admin
 
-Url: 
+Url: http://grafana.local/
 
 ### Logging
 For managing logs you can either use EFK(Elasticsearch, fluentbit and Kibana) or Opensearch with fluentbit. Only use one of them!
@@ -156,7 +179,8 @@ helm install opensearch-dashboards opensearch/opensearch-dashboards -n logging \
   --values opensearch-dashboards-values.yaml
 ```
 Username: admin
-Password: admin
+
+Password: OpensearchPassword123!
 
 Url: http://opensearch.local/app/discover
 ##### fluent-bit opensearch
