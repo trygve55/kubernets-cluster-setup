@@ -83,9 +83,13 @@ sudo apt install helm=3.17.*
 ### Ingress
 Ingress is used to expose HTTP and HTTPS services within the cluster.
 ```shell
-helm upgrade --install ingress -n ingress --create-namespace oci://ghcr.io/nginxinc/charts/nginx-ingress \
-  --set controller.ingressClass.name=public \
-  --set nginx.ingress.kubernetes.io/proxy-buffer-size="256k"
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+helm upgrade --install ingress -n ingress --create-namespace ingress-nginx/ingress-nginx \
+  --set controller.ingressClass=public \
+  --set controller.ingressClassResource.name=public \
+  --set controller.ingressClassResource.enabled=true \
+  --set controller.ingressClassResource.default=true
 ```
 
 ### MetalLB
