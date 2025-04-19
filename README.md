@@ -112,11 +112,19 @@ helm upgrade --install prometheus prometheus-community/prometheus -n prometheus 
 
 Url: http://prometheus.local/
 
-#### Grafana
+#### Grafana-Loki
+Grafana Loki is a fully featured logging stack.
 ```shell
 helm repo add bitnami https://charts.bitnami.com/bitnami
-kubectl create configmap memory-dashboard --from-file=memory-dashboard.json -n prometheus
-helm install grafana bitnami/grafana -n prometheus \
+helm install grafana-loki bitnami/grafana-loki -n logging --create-namespace
+```
+
+#### Grafana
+Grafana is a web application for viewing metrics and logs. It accesses logs gathered by Grafana Loki.
+```shell
+kubectl create namespace monitoring
+kubectl create configmap memory-dashboard --from-file=memory-dashboard.json -n monitoring
+helm install grafana bitnami/grafana -n monitoring \
   --set ingress.enabled=true \
   --set ingress.hosts[0]=grafana.local \
   --set ingress.ingressClassName=public \
@@ -127,13 +135,11 @@ helm install grafana bitnami/grafana -n prometheus \
   --set dashboardsConfigMaps[0].fileName=memory-dashboard.json \
   --values grafana-values.yaml
 ```
-Username: admin
-
-Password: admin
-
+Username: `admin` <br>
+Password: `admin` <br>
 Url: http://grafana.local/
 
-### Logging
+### Logging 
 For managing logs you can either use EFK(Elasticsearch, fluentbit and Kibana) or Opensearch with fluentbit. Only use one of them!
 ```shell
 kubectl create namespace logging

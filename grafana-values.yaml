@@ -6,3 +6,9 @@ datasources:
         access: proxy
         url: http://prometheus-server.prometheus.svc
         editable: false
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://grafana-loki-querier.logging.svc:3100
+        editable: false
+
