@@ -86,8 +86,8 @@ Ingress is used to expose HTTP and HTTPS services within the cluster.
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
 helm upgrade --install ingress -n ingress --create-namespace ingress-nginx/ingress-nginx \
-  --set controller.ingressClass=public \
-  --set controller.ingressClassResource.name=public \
+  --set controller.ingressClass=ngnix \
+  --set controller.ingressClassResource.name=ngnix \
   --set controller.ingressClassResource.enabled=true \
   --set controller.ingressClassResource.default=true
 ```
@@ -106,8 +106,7 @@ For metrics we will use Prometheus.
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm upgrade --install prometheus prometheus-community/prometheus -n prometheus --create-namespace \
   --set server.ingress.enabled=true \
-  --set server.ingress.hosts[0]=prometheus.local \
-  --set server.ingress.ingressClassName=public
+  --set server.ingress.hosts[0]=prometheus.local
 ```
 
 Url: http://prometheus.local/
@@ -127,7 +126,6 @@ kubectl create configmap memory-dashboard --from-file=memory-dashboard.json -n m
 helm install grafana bitnami/grafana -n monitoring \
   --set ingress.enabled=true \
   --set ingress.hosts[0]=grafana.local \
-  --set ingress.ingressClassName=public \
   --set admin.user=admin \
   --set admin.password=admin \
   --set dashboardsProvider.enabled=true \
@@ -139,7 +137,63 @@ Username: `admin` <br>
 Password: `admin` <br>
 Url: http://grafana.local/
 
-### Logging 
+### HTTPS - cert-manager
+We can set up cert-manager to handle HTTPS certificates for us.
+
+First we will install cert-manager into our Kubernetes cluster.
+```shell
+helm repo add jetstack https://charts.jetstack.io --force-update
+helm install cert-manager jetstack/cert-manager \
+--namespace cert-manager --create-namespace \
+--version v1.17.1 \
+--set installCRDs=true
+```
+Let's create the file `cluster-issuer.yaml` for our `ClusterIssuer` resource for Let's Encrypt.
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: <your-email-address>
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          ingressClassName: ngnix 
+```
+Then we add this `ClusterIssuer` to our Kubernetes cluster.
+```shell
+kubectl apply -f cluster-issuer.yaml
+```
+#### Adding HTTPS to an Ingress resource
+Add the following to an Ingress resource to enable HTTPS:
+```yaml
+metadata:
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - <website-domain-name>
+      secretName: <website-domain-name>-tls
+```
+Or to a Helm chart:
+```yaml
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    - hosts:
+        - <website-domain-name>
+      secretName: <website-domain-name>-tls
+```
+
+### Logging (Not needed if using Grafana-Loki)
 For managing logs you can either use EFK(Elasticsearch, fluentbit and Kibana) or Opensearch with fluentbit. Only use one of them!
 ```shell
 kubectl create namespace logging
@@ -170,8 +224,7 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 helm upgrade --install kibana bitnami/kibana -n logging \
   --set elasticsearch.hosts[0]=elasticsearch-master-hl \
   --set elasticsearch.port=9200 \
-  --set ingress.enabled=true \
-  --set ingress.ingressClassName=public
+  --set ingress.enabled=true
 ```
 
 #### Opensearch
@@ -185,7 +238,6 @@ helm install opensearch-dashboards opensearch/opensearch-dashboards -n logging \
   --set ingress.hosts[0].host=opensearch.local \
   --set ingress.hosts[0].paths[0].path=/ \
   --set ingress.hosts[0].paths[0].backend.service.name=opensearch-cluster-master \
-  --set ingress.ingressClassName=public \
   --values opensearch-dashboards-values.yaml
 ```
 Username: admin
