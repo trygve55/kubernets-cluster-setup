@@ -193,6 +193,20 @@ ingress:
       secretName: <website-domain-name>-tls
 ```
 
+### Notes
+#### Adding basic auth
+Add the following lines to the helm install command.
+```shell
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/auth-type"=basic \
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/auth-secret"="media/basic-auth" \
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/auth-realm"='Authentication Required' \
+```
+#### Adding HTTPS
+Add the following lines to the helm install command.
+```shell
+  --set ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod \
+```
+
 ### Logging (Not needed if using Grafana-Loki)
 For managing logs you can either use EFK(Elasticsearch, fluentbit and Kibana) or Opensearch with fluentbit. Only use one of them!
 ```shell
