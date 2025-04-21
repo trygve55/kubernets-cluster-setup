@@ -125,7 +125,12 @@ kubectl create namespace monitoring
 kubectl create configmap memory-dashboard --from-file=memory-dashboard.json -n monitoring
 helm install grafana bitnami/grafana -n monitoring \
   --set ingress.enabled=true \
-  --set ingress.hosts[0]=grafana.local \
+  --set ingress.hostname="grafana.furuly.cloud" \
+  --set ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod \
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/auth-type"=basic \
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/auth-secret"="media/basic-auth" \
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/auth-realm"='Authentication Required' \
+  --set ingress.tls=true \
   --set admin.user=admin \
   --set admin.password=admin \
   --set dashboardsProvider.enabled=true \
