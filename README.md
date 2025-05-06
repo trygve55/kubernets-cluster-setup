@@ -44,7 +44,7 @@ sudo apt-get install -y kubectl=1.32.*
 #### K3s
 K3s is a lightweight Kubernetes distribution. We will install it.
 ```shell
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=v1.32 INSTALL_K3S_EXEC="server --disable traefik" sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=v1.32 INSTALL_K3S_EXEC="server --disable traefik --disable servicelb" sh -
 ```
 
 ##### Configure kubectl
@@ -89,7 +89,8 @@ helm upgrade --install ingress -n ingress --create-namespace ingress-nginx/ingre
   --set controller.ingressClass=ngnix \
   --set controller.ingressClassResource.name=ngnix \
   --set controller.ingressClassResource.enabled=true \
-  --set controller.ingressClassResource.default=true
+  --set controller.ingressClassResource.default=true \
+  --set controller.service.externalTrafficPolicy=Local
 ```
 
 ### MetalLB
@@ -97,6 +98,33 @@ MetalLB allows us to give each externally avalible service a seperate IP.
 ```shell
 helm repo add metallb https://metallb.github.io/metallb
 helm install metallb metallb/metallb -n metallb --create-namespace 
+```
+Create the following files. Adjust the IP range here with one that fits your subnet.
+`ipaddresspool.yaml`:
+```yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: first-pool
+  namespace: metallb
+spec:
+  addresses:
+  - 192.168.1.240-192.168.1.250
+```
+`l2advertisement.yaml`:
+```yaml
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: example
+  namespace: metallb
+spec:
+  ipAddressPools:
+  - first-pool
+```
+```shell
+kubectl apply -f ipaddresspool.yaml
+kubectl apply -f l2advertisement.yaml
 ```
 
 ### Metrics
